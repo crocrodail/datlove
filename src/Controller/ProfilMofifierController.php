@@ -11,6 +11,7 @@ use App\Form\PhotoType;
 use App\Entity\User;
 use App\Entity\Photos;
 use App\Service\FileUploader;
+use Doctrine\ORM\Query;
 
 class ProfilMofifierController extends AbstractController
 {
@@ -31,12 +32,18 @@ class ProfilMofifierController extends AbstractController
         $photos = new Photos();
         $formPhotos = $this->createForm(PhotoType::class, $photos);
         $formPhotos->handleRequest($request);
+        $entityManager = $this->getDoctrine()->getManager();
+        $qb = $entityManager->createQueryBuilder();
+        $qb->select('u')
+           ->from(Photos::class, 'u')
+           ->where('u.user_id = '.$this->getUser()->getId());
 
 
         return $this->render('profil/mofifier.html.twig', [
             'user' => $this->getUser(),
             'profil' => $form->createView(),
             'photos' => $formPhotos->createView(),
+            'my_photos' => $qb->getQuery()->getResult(Query::HYDRATE_ARRAY)
         ]);
     }
     /**
@@ -55,15 +62,18 @@ class ProfilMofifierController extends AbstractController
           if (null !== $file_name) // for example
           {
             $directory = $file_uploader->getTargetDirectory();
-            $full_path = $directory.'/'.$file_name;
+            $full_path = $directory.$file_name;
+            move_uploaded_file($file,$full_path);
+            $photo = new Photos();
+            $entityManager = $this->getDoctrine()->getManager();
+            $photo
+              ->setUserId($this->getUser()->getId())
+              ->setUrl($full_path);
+            $entityManager->persist($photo);
+            $entityManager->flush();
           }
         }
       }
-      $profil = $this->createForm(ProfilType::class, $this->getUser());
-      return $this->render('profil/mofifier.html.twig', [
-          'user' => $this->getUser(),
-          'profil' => $form->createView(),
-          'photos' => $form->createView(),
-      ]);
+      return $this->redirectToRoute('profil_mofifier');
     }
 }

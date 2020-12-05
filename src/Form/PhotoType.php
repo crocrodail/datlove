@@ -21,8 +21,7 @@ class PhotoType extends AbstractType
             'constraints' => [
               new File([
                 'mimeTypes' => [ // We want to let upload only txt, csv or Excel files
-                  'image/x-png',
-                  'image/gif',
+                  'image/png',
                   'image/jpeg'
                 ],
                 'mimeTypesMessage' => "This image isn't valid.",
